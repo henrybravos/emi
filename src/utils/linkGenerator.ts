@@ -1,15 +1,19 @@
 // Utilidades para generar enlaces personalizados con nombres codificados
 
-// Función para codificar un nombre en un código único (versión corta)
+// Función para codificar un nombre en un código único (versión única con timestamp)
 export const encodeGuestName = (name: string): string => {
+  // Agregar timestamp actual para hacer el hash único
+  const timestamp = Date.now();
+  const nameWithTimestamp = `${name}-${timestamp}`;
+
   // Crear un código más corto usando base64 URL-safe
-  const base64 = btoa(encodeURIComponent(name))
+  const base64 = btoa(encodeURIComponent(nameWithTimestamp))
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=/g, '');
 
-  // Crear un hash simple del nombre para obfuscación
-  const hash = name.split('').reduce((a, b) => {
+  // Crear un hash simple del nombre con timestamp para obfuscación
+  const hash = nameWithTimestamp.split('').reduce((a, b) => {
     a = ((a << 5) - a) + b.charCodeAt(0);
     return a & a;
   }, 0);

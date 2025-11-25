@@ -10,6 +10,7 @@ export interface InvitationData {
   linkUrl: string;
   hasConfirmed: boolean;
   rsvpId?: string;
+  isDeleted?: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -177,12 +178,15 @@ export const isHashConfirmed = async (hash: string): Promise<boolean> => {
   }
 };
 
-// Función para eliminar invitación
+// Función para eliminar invitación (soft delete)
 export const deleteInvitation = async (invitationId: string): Promise<void> => {
   try {
-    console.log('🗑️ Eliminando invitación con ID:', invitationId);
-    await deleteDoc(doc(db, INVITATIONS_COLLECTION, invitationId));
-    console.log('✅ Invitación eliminada exitosamente');
+    console.log('🗑️ Marcando invitación como eliminada con ID:', invitationId);
+    await updateDoc(doc(db, INVITATIONS_COLLECTION, invitationId), {
+      isDeleted: true,
+      updatedAt: Timestamp.now(),
+    });
+    console.log('✅ Invitación marcada como eliminada exitosamente');
   } catch (error) {
     console.error('❌ Error al eliminar invitación:', error);
     throw new Error(`Error al eliminar invitación: ${error}`);

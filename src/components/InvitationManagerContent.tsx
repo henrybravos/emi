@@ -92,7 +92,15 @@ ${invitation.linkUrl}
   const loadInvitations = async () => {
     try {
       const allInvitations = await getAllInvitations();
-      setInvitations(allInvitations);
+      console.log("🔍 Total invitaciones cargadas:", allInvitations.length);
+      console.log("🔍 Lista de invitaciones:", allInvitations.map(inv => inv.guestName));
+
+      // Ordenar por fecha de creación (más recientes primero)
+      const sortedInvitations = allInvitations.sort((a, b) => {
+        return b.createdAt.toMillis() - a.createdAt.toMillis();
+      });
+
+      setInvitations(sortedInvitations);
     } catch (error) {
       console.error("Error al cargar invitaciones:", error);
     }
