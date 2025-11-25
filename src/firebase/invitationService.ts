@@ -1,6 +1,15 @@
-import { collection, addDoc, getDocs, query, where, Timestamp, updateDoc, deleteDoc, doc } from 'firebase/firestore';
-import { db } from './config';
-import { encodeGuestName } from '../utils/linkGenerator';
+import {
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  where,
+  Timestamp,
+  updateDoc,
+  doc,
+} from "firebase/firestore";
+import { db } from "./config";
+import { encodeGuestName } from "../utils/linkGenerator";
 
 export interface InvitationData {
   guestName: string;
@@ -20,7 +29,7 @@ export interface InvitationResponse extends InvitationData {
 }
 
 // Colección de invitaciones en Firestore
-const INVITATIONS_COLLECTION = 'invitations';
+const INVITATIONS_COLLECTION = "invitations";
 
 // Función para crear una invitación
 export const createInvitation = async (
@@ -30,12 +39,12 @@ export const createInvitation = async (
   baseUrl: string = window.location.origin
 ): Promise<InvitationResponse> => {
   try {
-    console.log('✨ Creando invitación para:', guestName);
+    console.log("✨ Creando invitación para:", guestName);
 
     // Verificar si ya existe una invitación para este invitado
     const existingInvitation = await getInvitationByName(guestName);
     if (existingInvitation) {
-      console.log('📝 Ya existe invitación, actualizando...');
+      console.log("📝 Ya existe invitación, actualizando...");
       await updateDoc(doc(db, INVITATIONS_COLLECTION, existingInvitation.id), {
         email: email || existingInvitation.email,
         phone: phone || existingInvitation.phone,
@@ -52,10 +61,10 @@ export const createInvitation = async (
     const hash = encodeGuestName(guestName);
     const linkUrl = `${baseUrl}/${hash}`;
 
-    const invitationData: Omit<InvitationData, 'id'> = {
+    const invitationData: Omit<InvitationData, "id"> = {
       guestName,
-      email: email || '',
-      phone: phone || '',
+      email: email || "",
+      phone: phone || "",
       hash,
       linkUrl,
       hasConfirmed: false,
@@ -64,26 +73,31 @@ export const createInvitation = async (
     };
 
     // Guardar en Firestore
-    const docRef = await addDoc(collection(db, INVITATIONS_COLLECTION), invitationData);
+    const docRef = await addDoc(
+      collection(db, INVITATIONS_COLLECTION),
+      invitationData
+    );
 
-    console.log('✅ Invitación creada con ID:', docRef.id);
+    console.log("✅ Invitación creada con ID:", docRef.id);
 
     return {
       id: docRef.id,
       ...invitationData,
     };
   } catch (error) {
-    console.error('❌ Error al crear invitación:', error);
+    console.error("❌ Error al crear invitación:", error);
     throw new Error(`Error al crear invitación: ${error}`);
   }
 };
 
 // Función para obtener invitación por nombre
-export const getInvitationByName = async (guestName: string): Promise<InvitationResponse | null> => {
+export const getInvitationByName = async (
+  guestName: string
+): Promise<InvitationResponse | null> => {
   try {
     const q = query(
       collection(db, INVITATIONS_COLLECTION),
-      where('guestName', '==', guestName)
+      where("guestName", "==", guestName)
     );
 
     const querySnapshot = await getDocs(q);
@@ -95,20 +109,22 @@ export const getInvitationByName = async (guestName: string): Promise<Invitation
     const doc = querySnapshot.docs[0];
     return {
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     } as InvitationResponse;
   } catch (error) {
-    console.error('❌ Error al buscar invitación por nombre:', error);
+    console.error("❌ Error al buscar invitación por nombre:", error);
     return null;
   }
 };
 
 // Función para obtener invitación por hash
-export const getInvitationByHash = async (hash: string): Promise<InvitationResponse | null> => {
+export const getInvitationByHash = async (
+  hash: string
+): Promise<InvitationResponse | null> => {
   try {
     const q = query(
       collection(db, INVITATIONS_COLLECTION),
-      where('hash', '==', hash)
+      where("hash", "==", hash)
     );
 
     const querySnapshot = await getDocs(q);
@@ -120,16 +136,19 @@ export const getInvitationByHash = async (hash: string): Promise<InvitationRespo
     const doc = querySnapshot.docs[0];
     return {
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     } as InvitationResponse;
   } catch (error) {
-    console.error('❌ Error al buscar invitación por hash:', error);
+    console.error("❌ Error al buscar invitación por hash:", error);
     return null;
   }
 };
 
 // Función para marcar invitación como confirmada
-export const markInvitationAsConfirmed = async (hash: string, rsvpId: string): Promise<void> => {
+export const markInvitationAsConfirmed = async (
+  hash: string,
+  rsvpId: string
+): Promise<void> => {
   try {
     const invitation = await getInvitationByHash(hash);
     if (invitation) {
@@ -138,10 +157,10 @@ export const markInvitationAsConfirmed = async (hash: string, rsvpId: string): P
         rsvpId,
         updatedAt: Timestamp.now(),
       });
-      console.log('✅ Invitación marcada como confirmada');
+      console.log("✅ Invitación marcada como confirmada");
     }
   } catch (error) {
-    console.error('❌ Error al marcar invitación como confirmada:', error);
+    console.error("❌ Error al marcar invitación como confirmada:", error);
     throw error;
   }
 };
@@ -155,14 +174,14 @@ export const getAllInvitations = async (): Promise<InvitationResponse[]> => {
     querySnapshot.forEach((doc) => {
       invitations.push({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       } as InvitationResponse);
     });
 
-    console.log('📋 Invitaciones obtenidas:', invitations.length);
+    console.log("📋 Invitaciones obtenidas:", invitations.length);
     return invitations;
   } catch (error) {
-    console.error('❌ Error al obtener invitaciones:', error);
+    console.error("❌ Error al obtener invitaciones:", error);
     throw new Error(`Error al obtener invitaciones: ${error}`);
   }
 };
@@ -173,7 +192,7 @@ export const isHashConfirmed = async (hash: string): Promise<boolean> => {
     const invitation = await getInvitationByHash(hash);
     return invitation ? invitation.hasConfirmed : false;
   } catch (error) {
-    console.error('❌ Error al verificar confirmación:', error);
+    console.error("❌ Error al verificar confirmación:", error);
     return false;
   }
 };
@@ -181,14 +200,14 @@ export const isHashConfirmed = async (hash: string): Promise<boolean> => {
 // Función para eliminar invitación (soft delete)
 export const deleteInvitation = async (invitationId: string): Promise<void> => {
   try {
-    console.log('🗑️ Marcando invitación como eliminada con ID:', invitationId);
+    console.log("🗑️ Marcando invitación como eliminada con ID:", invitationId);
     await updateDoc(doc(db, INVITATIONS_COLLECTION, invitationId), {
       isDeleted: true,
       updatedAt: Timestamp.now(),
     });
-    console.log('✅ Invitación marcada como eliminada exitosamente');
+    console.log("✅ Invitación marcada como eliminada exitosamente");
   } catch (error) {
-    console.error('❌ Error al eliminar invitación:', error);
+    console.error("❌ Error al eliminar invitación:", error);
     throw new Error(`Error al eliminar invitación: ${error}`);
   }
 };
