@@ -4,17 +4,19 @@ import {
   createComment,
   getAllComments,
   timestampToDate,
+  toggleReaction,
+  hasUserReacted,
+  getUserReactionType,
+  type ReactionType,
+  type CommentResponse,
 } from "../firebase/commentsService";
 import { getGuestNameFromURL, getHashFromURL } from "../utils/linkGenerator";
 import { getInvitationByHash } from "../firebase/invitationService";
 
-interface Comment {
-  id: string;
-  author: string;
-  message: string;
-  timestamp: Date;
-  emoji: string;
-}
+// Usamos CommentResponse del servicio para mayor consistencia
+type Comment = CommentResponse & {
+  timestamp: Date; // Convertido desde Firestore Timestamp
+};
 
 const babyEmojis = ["👶", "🍼", "🧸", "🎈", "💕", "🌟", "🎀", "💙", "💗", "✨"];
 
@@ -28,6 +30,9 @@ export default function Comments() {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [hasValidHash, setHasValidHash] = useState(false);
+  const [currentUser, setCurrentUser] = useState<string>("");
+  const [showReactionDetails, setShowReactionDetails] = useState<string | null>(null);
+  const [reactionFeedback, setReactionFeedback] = useState<{commentId: string, type: ReactionType} | null>(null);
 
   // Cargar comentarios al iniciar y verificar hash válido
   useEffect(() => {
@@ -44,6 +49,7 @@ export default function Comments() {
 
         if (invitation) {
           setHasValidHash(true);
+          setCurrentUser(guestName);
           setNewComment(prev => ({
             ...prev,
             author: guestName
@@ -68,10 +74,33 @@ export default function Comments() {
         message: comment.message,
         emoji: comment.emoji,
         timestamp: timestampToDate(comment.timestamp),
+        reactions: comment.reactions || {
+          likes: { count: 0, users: [] },
+          loves: { count: 0, users: [] },
+          excited: { count: 0, users: [] },
+        },
       }));
       setComments(convertedComments);
     } catch (error) {
       console.error("Error al cargar comentarios:", error);
+    }
+  };
+
+  // Manejar reacciones
+  const handleReaction = async (commentId: string, reactionType: ReactionType) => {
+    try {
+      // Activar efecto visual
+      setReactionFeedback({ commentId, type: reactionType });
+
+      await toggleReaction(commentId, reactionType, currentUser);
+      // Recargar comentarios para ver los cambios
+      await loadComments();
+
+      // Limpiar efecto después de la animación
+      setTimeout(() => setReactionFeedback(null), 300);
+    } catch (error) {
+      console.error("Error al reaccionar:", error);
+      setReactionFeedback(null);
     }
   };
 
@@ -284,7 +313,7 @@ export default function Comments() {
           {comments.map((comment, index) => (
             <motion.div
               key={comment.id}
-              className="bg-white/60 rounded-xl p-4 border shadow-sm"
+              className="relative bg-white/60 rounded-xl p-4 border shadow-sm"
               style={{ borderColor: "#efbb20" }}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -325,6 +354,137 @@ export default function Comments() {
                   </p>
                 </div>
               </div>
+
+              {/* Reacciones flotantes en esquina inferior derecha */}
+              {hasValidHash && (
+                <div className="absolute -bottom-4 right-2 flex items-center space-x-1 bg-white/90 rounded-full px-2 py-1 shadow-sm border border-gray-200">
+                  {/* Likes */}
+                  <motion.button
+                    onClick={() => handleReaction(comment.id, 'likes')}
+                    className={`flex items-center space-x-0.5 p-1 rounded-full text-xs transition-all hover:scale-110 ${
+                      hasUserReacted(comment, currentUser, 'likes')
+                        ? 'text-blue-600'
+                        : getUserReactionType(comment, currentUser)
+                          ? 'text-gray-300 hover:text-gray-500'
+                          : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                    title={`${comment.reactions.likes.users.join(', ')}`}
+                    whileTap={{ scale: 0.8 }}
+                    animate={
+                      reactionFeedback?.commentId === comment.id && reactionFeedback?.type === 'likes'
+                        ? { scale: 1.5, rotate: 10 }
+                        : { scale: 1, rotate: 0 }
+                    }
+                    transition={{ duration: 0.1, type: "spring", stiffness: 1200, damping: 20 }}
+                  >
+                    <motion.span
+                      className="text-xs"
+                      animate={
+                        reactionFeedback?.commentId === comment.id && reactionFeedback?.type === 'likes'
+                          ? { y: -8, scale: 1.3 }
+                          : { y: 0, scale: 1 }
+                      }
+                      transition={{ duration: 0.1, type: "spring", stiffness: 1200, damping: 20 }}
+                    >
+                      👍
+                    </motion.span>
+                    {comment.reactions.likes.count > 0 && (
+                      <motion.span
+                        className="text-xs"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 500 }}
+                      >
+                        {comment.reactions.likes.count}
+                      </motion.span>
+                    )}
+                  </motion.button>
+
+                  {/* Loves */}
+                  <motion.button
+                    onClick={() => handleReaction(comment.id, 'loves')}
+                    className={`flex items-center space-x-0.5 p-1 rounded-full text-xs transition-all hover:scale-110 ${
+                      hasUserReacted(comment, currentUser, 'loves')
+                        ? 'text-red-600'
+                        : getUserReactionType(comment, currentUser)
+                          ? 'text-gray-300 hover:text-gray-500'
+                          : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                    title={`${comment.reactions.loves.users.join(', ')}`}
+                    whileTap={{ scale: 0.8 }}
+                    animate={
+                      reactionFeedback?.commentId === comment.id && reactionFeedback?.type === 'loves'
+                        ? { scale: 1.6, rotate: -8 }
+                        : { scale: 1, rotate: 0 }
+                    }
+                    transition={{ duration: 0.1, type: "spring", stiffness: 1200, damping: 20 }}
+                  >
+                    <motion.span
+                      className="text-xs"
+                      animate={
+                        reactionFeedback?.commentId === comment.id && reactionFeedback?.type === 'loves'
+                          ? { scale: 1.4, y: -7 }
+                          : { scale: 1, y: 0 }
+                      }
+                      transition={{ duration: 0.1, type: "spring", stiffness: 1200, damping: 20 }}
+                    >
+                      ❤️
+                    </motion.span>
+                    {comment.reactions.loves.count > 0 && (
+                      <motion.span
+                        className="text-xs"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 500 }}
+                      >
+                        {comment.reactions.loves.count}
+                      </motion.span>
+                    )}
+                  </motion.button>
+
+                  {/* Excited */}
+                  <motion.button
+                    onClick={() => handleReaction(comment.id, 'excited')}
+                    className={`flex items-center space-x-0.5 p-1 rounded-full text-xs transition-all hover:scale-110 ${
+                      hasUserReacted(comment, currentUser, 'excited')
+                        ? 'text-yellow-600'
+                        : getUserReactionType(comment, currentUser)
+                          ? 'text-gray-300 hover:text-gray-500'
+                          : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                    title={`${comment.reactions.excited.users.join(', ')}`}
+                    whileTap={{ scale: 0.8 }}
+                    animate={
+                      reactionFeedback?.commentId === comment.id && reactionFeedback?.type === 'excited'
+                        ? { scale: 1.7, rotate: 15 }
+                        : { scale: 1, rotate: 0 }
+                    }
+                    transition={{ duration: 0.1, type: "spring", stiffness: 1200, damping: 20 }}
+                  >
+                    <motion.span
+                      className="text-xs"
+                      animate={
+                        reactionFeedback?.commentId === comment.id && reactionFeedback?.type === 'excited'
+                          ? { scale: 1.5, rotate: -12, y: -8 }
+                          : { scale: 1, rotate: 0, y: 0 }
+                      }
+                      transition={{ duration: 0.1, type: "spring", stiffness: 1200, damping: 20 }}
+                    >
+                      🥰
+                    </motion.span>
+                    {comment.reactions.excited.count > 0 && (
+                      <motion.span
+                        className="text-xs"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 500 }}
+                      >
+                        {comment.reactions.excited.count}
+                      </motion.span>
+                    )}
+                  </motion.button>
+                </div>
+              )}
             </motion.div>
           ))}
         </AnimatePresence>
