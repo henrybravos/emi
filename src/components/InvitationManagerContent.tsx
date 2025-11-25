@@ -139,6 +139,21 @@ ${invitation.linkUrl}
     }
   };
 
+  const copyLinkOnly = async (invitation: InvitationResponse) => {
+    try {
+      await navigator.clipboard.writeText(invitation.linkUrl);
+      alert(`¡Enlace copiado al portapapeles! 🔗\n\n${invitation.linkUrl}`);
+    } catch (error) {
+      const textArea = document.createElement("textarea");
+      textArea.value = invitation.linkUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      alert("¡Enlace copiado! 🔗");
+    }
+  };
+
   const handleDeleteInvitation = async (invitation: InvitationResponse) => {
     const confirmDelete = confirm(
       `¿Estás seguro de que quieres eliminar la invitación de ${invitation.guestName}?\n\nEsta acción no se puede deshacer.`
@@ -283,7 +298,15 @@ ${invitation.linkUrl}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      📱 Copiar WhatsApp
+                      📱 WhatsApp
+                    </motion.button>
+                    <motion.button
+                      onClick={() => copyLinkOnly(invitation)}
+                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      🔗 Enlace
                     </motion.button>
                     <motion.button
                       onClick={() => handleDeleteInvitation(invitation)}

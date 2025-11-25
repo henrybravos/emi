@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   createComment,
   getAllComments,
-  timestampToDate,
   toggleReaction,
   hasUserReacted,
   getUserReactionType,
@@ -14,9 +13,7 @@ import { getGuestNameFromURL, getHashFromURL } from "../utils/linkGenerator";
 import { getInvitationByHash } from "../firebase/invitationService";
 
 // Usamos CommentResponse del servicio para mayor consistencia
-type Comment = CommentResponse & {
-  timestamp: Date; // Convertido desde Firestore Timestamp
-};
+type Comment = CommentResponse;
 
 const babyEmojis = ["👶", "🍼", "🧸", "🎈", "💕", "🌟", "🎀", "💙", "💗", "✨"];
 
@@ -31,8 +28,10 @@ export default function Comments() {
   const [loading, setLoading] = useState(false);
   const [hasValidHash, setHasValidHash] = useState(false);
   const [currentUser, setCurrentUser] = useState<string>("");
-  const [showReactionDetails, setShowReactionDetails] = useState<string | null>(null);
-  const [reactionFeedback, setReactionFeedback] = useState<{commentId: string, type: ReactionType} | null>(null);
+  const [reactionFeedback, setReactionFeedback] = useState<{
+    commentId: string;
+    type: ReactionType;
+  } | null>(null);
 
   // Cargar comentarios al iniciar y verificar hash válido
   useEffect(() => {
@@ -50,9 +49,9 @@ export default function Comments() {
         if (invitation) {
           setHasValidHash(true);
           setCurrentUser(guestName);
-          setNewComment(prev => ({
+          setNewComment((prev) => ({
             ...prev,
-            author: guestName
+            author: guestName,
           }));
         } else {
           console.log("❌ Comments: Invitación no encontrada o eliminada");
@@ -67,27 +66,26 @@ export default function Comments() {
   const loadComments = async () => {
     try {
       const firebaseComments = await getAllComments();
-      // Convertir CommentResponse a Comment
-      const convertedComments: Comment[] = firebaseComments.map((comment) => ({
-        id: comment.id,
-        author: comment.author,
-        message: comment.message,
-        emoji: comment.emoji,
-        timestamp: timestampToDate(comment.timestamp),
+      // Ya son CommentResponse, solo necesitamos asegurar que tengan reacciones
+      const commentsWithReactions: Comment[] = firebaseComments.map((comment) => ({
+        ...comment,
         reactions: comment.reactions || {
           likes: { count: 0, users: [] },
           loves: { count: 0, users: [] },
           excited: { count: 0, users: [] },
         },
       }));
-      setComments(convertedComments);
+      setComments(commentsWithReactions);
     } catch (error) {
       console.error("Error al cargar comentarios:", error);
     }
   };
 
   // Manejar reacciones
-  const handleReaction = async (commentId: string, reactionType: ReactionType) => {
+  const handleReaction = async (
+    commentId: string,
+    reactionType: ReactionType
+  ) => {
     try {
       // Activar efecto visual
       setReactionFeedback({ commentId, type: reactionType });
@@ -224,20 +222,23 @@ export default function Comments() {
                     disabled={hasValidHash}
                     className={`w-full px-4 py-2 border rounded-lg transition-all ${
                       hasValidHash
-                        ? 'bg-gray-100 cursor-not-allowed focus:outline-none'
-                        : 'focus:outline-none'
+                        ? "bg-gray-100 cursor-not-allowed focus:outline-none"
+                        : "focus:outline-none"
                     }`}
                     style={{
                       borderColor: "#efbb20",
-                      opacity: hasValidHash ? 0.7 : 1
+                      opacity: hasValidHash ? 0.7 : 1,
                     }}
                     onFocus={(e) => {
                       if (!hasValidHash) {
-                        e.target.style.boxShadow = "0 0 0 2px rgba(239, 187, 32, 0.3)";
+                        e.target.style.boxShadow =
+                          "0 0 0 2px rgba(239, 187, 32, 0.3)";
                       }
                     }}
                     onBlur={(e) => (e.target.style.boxShadow = "none")}
-                    placeholder={hasValidHash ? "Nombre confirmado" : "¿Cómo te llamas?"}
+                    placeholder={
+                      hasValidHash ? "Nombre confirmado" : "¿Cómo te llamas?"
+                    }
                   />
                 </div>
 
@@ -343,7 +344,7 @@ export default function Comments() {
                       className="text-sm text-gray-500"
                       style={{ color: "rgb(10, 135, 161)" }}
                     >
-                      {formatTimeAgo(comment.timestamp)}
+                      {formatTimeAgo(comment.timestamp.toDate())}
                     </span>
                   </div>
                   <p
@@ -360,31 +361,43 @@ export default function Comments() {
                 <div className="absolute -bottom-4 right-2 flex items-center space-x-1 bg-white/90 rounded-full px-2 py-1 shadow-sm border border-gray-200">
                   {/* Likes */}
                   <motion.button
-                    onClick={() => handleReaction(comment.id, 'likes')}
+                    onClick={() => handleReaction(comment.id, "likes")}
                     className={`flex items-center space-x-0.5 p-1 rounded-full text-xs transition-all hover:scale-110 ${
-                      hasUserReacted(comment, currentUser, 'likes')
-                        ? 'text-blue-600'
+                      hasUserReacted(comment, currentUser, "likes")
+                        ? "text-blue-600"
                         : getUserReactionType(comment, currentUser)
-                          ? 'text-gray-300 hover:text-gray-500'
-                          : 'text-gray-400 hover:text-gray-600'
+                        ? "text-gray-300 hover:text-gray-500"
+                        : "text-gray-400 hover:text-gray-600"
                     }`}
-                    title={`${comment.reactions.likes.users.join(', ')}`}
+                    title={`${comment.reactions.likes.users.join(", ")}`}
                     whileTap={{ scale: 0.8 }}
                     animate={
-                      reactionFeedback?.commentId === comment.id && reactionFeedback?.type === 'likes'
+                      reactionFeedback?.commentId === comment.id &&
+                      reactionFeedback?.type === "likes"
                         ? { scale: 1.5, rotate: 10 }
                         : { scale: 1, rotate: 0 }
                     }
-                    transition={{ duration: 0.1, type: "spring", stiffness: 1200, damping: 20 }}
+                    transition={{
+                      duration: 0.1,
+                      type: "spring",
+                      stiffness: 1200,
+                      damping: 20,
+                    }}
                   >
                     <motion.span
                       className="text-xs"
                       animate={
-                        reactionFeedback?.commentId === comment.id && reactionFeedback?.type === 'likes'
+                        reactionFeedback?.commentId === comment.id &&
+                        reactionFeedback?.type === "likes"
                           ? { y: -8, scale: 1.3 }
                           : { y: 0, scale: 1 }
                       }
-                      transition={{ duration: 0.1, type: "spring", stiffness: 1200, damping: 20 }}
+                      transition={{
+                        duration: 0.1,
+                        type: "spring",
+                        stiffness: 1200,
+                        damping: 20,
+                      }}
                     >
                       👍
                     </motion.span>
@@ -402,31 +415,43 @@ export default function Comments() {
 
                   {/* Loves */}
                   <motion.button
-                    onClick={() => handleReaction(comment.id, 'loves')}
+                    onClick={() => handleReaction(comment.id, "loves")}
                     className={`flex items-center space-x-0.5 p-1 rounded-full text-xs transition-all hover:scale-110 ${
-                      hasUserReacted(comment, currentUser, 'loves')
-                        ? 'text-red-600'
+                      hasUserReacted(comment, currentUser, "loves")
+                        ? "text-red-600"
                         : getUserReactionType(comment, currentUser)
-                          ? 'text-gray-300 hover:text-gray-500'
-                          : 'text-gray-400 hover:text-gray-600'
+                        ? "text-gray-300 hover:text-gray-500"
+                        : "text-gray-400 hover:text-gray-600"
                     }`}
-                    title={`${comment.reactions.loves.users.join(', ')}`}
+                    title={`${comment.reactions.loves.users.join(", ")}`}
                     whileTap={{ scale: 0.8 }}
                     animate={
-                      reactionFeedback?.commentId === comment.id && reactionFeedback?.type === 'loves'
+                      reactionFeedback?.commentId === comment.id &&
+                      reactionFeedback?.type === "loves"
                         ? { scale: 1.6, rotate: -8 }
                         : { scale: 1, rotate: 0 }
                     }
-                    transition={{ duration: 0.1, type: "spring", stiffness: 1200, damping: 20 }}
+                    transition={{
+                      duration: 0.1,
+                      type: "spring",
+                      stiffness: 1200,
+                      damping: 20,
+                    }}
                   >
                     <motion.span
                       className="text-xs"
                       animate={
-                        reactionFeedback?.commentId === comment.id && reactionFeedback?.type === 'loves'
+                        reactionFeedback?.commentId === comment.id &&
+                        reactionFeedback?.type === "loves"
                           ? { scale: 1.4, y: -7 }
                           : { scale: 1, y: 0 }
                       }
-                      transition={{ duration: 0.1, type: "spring", stiffness: 1200, damping: 20 }}
+                      transition={{
+                        duration: 0.1,
+                        type: "spring",
+                        stiffness: 1200,
+                        damping: 20,
+                      }}
                     >
                       ❤️
                     </motion.span>
@@ -444,31 +469,43 @@ export default function Comments() {
 
                   {/* Excited */}
                   <motion.button
-                    onClick={() => handleReaction(comment.id, 'excited')}
+                    onClick={() => handleReaction(comment.id, "excited")}
                     className={`flex items-center space-x-0.5 p-1 rounded-full text-xs transition-all hover:scale-110 ${
-                      hasUserReacted(comment, currentUser, 'excited')
-                        ? 'text-yellow-600'
+                      hasUserReacted(comment, currentUser, "excited")
+                        ? "text-yellow-600"
                         : getUserReactionType(comment, currentUser)
-                          ? 'text-gray-300 hover:text-gray-500'
-                          : 'text-gray-400 hover:text-gray-600'
+                        ? "text-gray-300 hover:text-gray-500"
+                        : "text-gray-400 hover:text-gray-600"
                     }`}
-                    title={`${comment.reactions.excited.users.join(', ')}`}
+                    title={`${comment.reactions.excited.users.join(", ")}`}
                     whileTap={{ scale: 0.8 }}
                     animate={
-                      reactionFeedback?.commentId === comment.id && reactionFeedback?.type === 'excited'
+                      reactionFeedback?.commentId === comment.id &&
+                      reactionFeedback?.type === "excited"
                         ? { scale: 1.7, rotate: 15 }
                         : { scale: 1, rotate: 0 }
                     }
-                    transition={{ duration: 0.1, type: "spring", stiffness: 1200, damping: 20 }}
+                    transition={{
+                      duration: 0.1,
+                      type: "spring",
+                      stiffness: 1200,
+                      damping: 20,
+                    }}
                   >
                     <motion.span
                       className="text-xs"
                       animate={
-                        reactionFeedback?.commentId === comment.id && reactionFeedback?.type === 'excited'
+                        reactionFeedback?.commentId === comment.id &&
+                        reactionFeedback?.type === "excited"
                           ? { scale: 1.5, rotate: -12, y: -8 }
                           : { scale: 1, rotate: 0, y: 0 }
                       }
-                      transition={{ duration: 0.1, type: "spring", stiffness: 1200, damping: 20 }}
+                      transition={{
+                        duration: 0.1,
+                        type: "spring",
+                        stiffness: 1200,
+                        damping: 20,
+                      }}
                     >
                       🥰
                     </motion.span>
