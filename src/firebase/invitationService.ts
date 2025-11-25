@@ -41,20 +41,36 @@ export const createInvitation = async (
   try {
     console.log("✨ Creando invitación para:", guestName);
 
-    // Verificar si ya existe una invitación para este invitado
-    const existingInvitation = await getInvitationByName(guestName);
+    // Verificar si ya existe una invitación para este invitado (incluyendo eliminadas)
+    const existingInvitation = await getInvitationByNameIncludingDeleted(guestName);
     if (existingInvitation) {
-      console.log("📝 Ya existe invitación, actualizando...");
-      await updateDoc(doc(db, INVITATIONS_COLLECTION, existingInvitation.id), {
-        email: email || existingInvitation.email,
-        phone: phone || existingInvitation.phone,
-        updatedAt: Timestamp.now(),
-      });
-      return {
-        ...existingInvitation,
-        email: email || existingInvitation.email,
-        phone: phone || existingInvitation.phone,
-      };
+      if (existingInvitation.isDeleted) {
+        console.log("🔄 Reactivando invitación eliminada para:", guestName);
+        await reactivateInvitation(existingInvitation.id);
+        await updateDoc(doc(db, INVITATIONS_COLLECTION, existingInvitation.id), {
+          email: email || existingInvitation.email,
+          phone: phone || existingInvitation.phone,
+          updatedAt: Timestamp.now(),
+        });
+        return {
+          ...existingInvitation,
+          email: email || existingInvitation.email,
+          phone: phone || existingInvitation.phone,
+          isDeleted: false,
+        };
+      } else {
+        console.log("📝 Ya existe invitación activa, actualizando...");
+        await updateDoc(doc(db, INVITATIONS_COLLECTION, existingInvitation.id), {
+          email: email || existingInvitation.email,
+          phone: phone || existingInvitation.phone,
+          updatedAt: Timestamp.now(),
+        });
+        return {
+          ...existingInvitation,
+          email: email || existingInvitation.email,
+          phone: phone || existingInvitation.phone,
+        };
+      }
     }
 
     // Generar hash y URL
@@ -90,8 +106,42 @@ export const createInvitation = async (
   }
 };
 
-// Función para obtener invitación por nombre
+// Función para obtener invitación por nombre (solo activas)
 export const getInvitationByName = async (
+  guestName: string
+): Promise<InvitationResponse | null> => {
+  try {
+    const q = query(
+      collection(db, INVITATIONS_COLLECTION),
+      where("guestName", "==", guestName)
+    );
+
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      return null;
+    }
+
+    const doc = querySnapshot.docs[0];
+    const data = doc.data() as InvitationData;
+
+    // Solo retornar si no está eliminada
+    if (data.isDeleted) {
+      return null;
+    }
+
+    return {
+      id: doc.id,
+      ...data,
+    } as InvitationResponse;
+  } catch (error) {
+    console.error("❌ Error al buscar invitación por nombre:", error);
+    return null;
+  }
+};
+
+// Función para obtener invitación por nombre (incluyendo eliminadas)
+export const getInvitationByNameIncludingDeleted = async (
   guestName: string
 ): Promise<InvitationResponse | null> => {
   try {
@@ -134,9 +184,16 @@ export const getInvitationByHash = async (
     }
 
     const doc = querySnapshot.docs[0];
+    const data = doc.data() as InvitationData;
+
+    // Solo retornar si no está eliminada
+    if (data.isDeleted) {
+      return null;
+    }
+
     return {
       id: doc.id,
-      ...doc.data(),
+      ...data,
     } as InvitationResponse;
   } catch (error) {
     console.error("❌ Error al buscar invitación por hash:", error);
@@ -172,13 +229,17 @@ export const getAllInvitations = async (): Promise<InvitationResponse[]> => {
     const invitations: InvitationResponse[] = [];
 
     querySnapshot.forEach((doc) => {
-      invitations.push({
-        id: doc.id,
-        ...doc.data(),
-      } as InvitationResponse);
+      const data = doc.data() as InvitationData;
+      // Solo incluir invitaciones no eliminadas
+      if (!data.isDeleted) {
+        invitations.push({
+          id: doc.id,
+          ...data,
+        } as InvitationResponse);
+      }
     });
 
-    console.log("📋 Invitaciones obtenidas:", invitations.length);
+    console.log("📋 Invitaciones activas obtenidas:", invitations.length);
     return invitations;
   } catch (error) {
     console.error("❌ Error al obtener invitaciones:", error);
@@ -209,5 +270,20 @@ export const deleteInvitation = async (invitationId: string): Promise<void> => {
   } catch (error) {
     console.error("❌ Error al eliminar invitación:", error);
     throw new Error(`Error al eliminar invitación: ${error}`);
+  }
+};
+
+// Función para reactivar una invitación eliminada
+export const reactivateInvitation = async (invitationId: string): Promise<void> => {
+  try {
+    console.log('🔄 Reactivando invitación con ID:', invitationId);
+    await updateDoc(doc(db, INVITATIONS_COLLECTION, invitationId), {
+      isDeleted: false,
+      updatedAt: Timestamp.now(),
+    });
+    console.log('✅ Invitación reactivada exitosamente');
+  } catch (error) {
+    console.error('❌ Error al reactivar invitación:', error);
+    throw new Error(`Error al reactivar invitación: ${error}`);
   }
 };
