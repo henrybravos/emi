@@ -84,7 +84,7 @@ export default function PhotoGallery() {
             className="relative aspect-square bg-gray-100 rounded-2xl overflow-hidden"
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
-            onDragEnd={(e, info) => handleSwipe(info)}
+            onDragEnd={(_, info) => handleSwipe(info)}
             whileTap={{ cursor: "grabbing" }}
           >
             <AnimatePresence mode="popLayout">
