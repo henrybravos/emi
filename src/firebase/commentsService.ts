@@ -10,6 +10,7 @@ export interface CommentData {
     likes: { count: number; users: string[] };
     loves: { count: number; users: string[] };
     excited: { count: number; users: string[] };
+    happy: { count: number; users: string[] };
   };
 }
 
@@ -38,6 +39,7 @@ export const createComment = async (
         likes: { count: 0, users: [] },
         loves: { count: 0, users: [] },
         excited: { count: 0, users: [] },
+        happy: { count: 0, users: [] },
       },
     };
 
@@ -84,7 +86,7 @@ export const getAllComments = async (): Promise<CommentResponse[]> => {
 };
 
 // Tipos de reacciones disponibles
-export type ReactionType = 'likes' | 'loves' | 'excited';
+export type ReactionType = 'likes' | 'loves' | 'excited' | 'happy';
 
 // Función para agregar o quitar reacción a un comentario
 export const toggleReaction = async (

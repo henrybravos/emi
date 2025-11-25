@@ -73,6 +73,7 @@ export default function Comments() {
           likes: { count: 0, users: [] },
           loves: { count: 0, users: [] },
           excited: { count: 0, users: [] },
+          happy: { count: 0, users: [] },
         },
       }));
       setComments(commentsWithReactions);
@@ -517,6 +518,60 @@ export default function Comments() {
                         transition={{ type: "spring", stiffness: 500 }}
                       >
                         {comment.reactions.excited.count}
+                      </motion.span>
+                    )}
+                  </motion.button>
+
+                  {/* Happy */}
+                  <motion.button
+                    onClick={() => handleReaction(comment.id, "happy")}
+                    className={`flex items-center space-x-0.5 p-1 rounded-full text-xs transition-all hover:scale-110 ${
+                      hasUserReacted(comment, currentUser, "happy")
+                        ? "text-yellow-600"
+                        : getUserReactionType(comment, currentUser)
+                        ? "text-gray-300 hover:text-gray-500"
+                        : "text-gray-400 hover:text-gray-600"
+                    }`}
+                    title={`${comment.reactions.happy.users.join(", ")}`}
+                    whileTap={{ scale: 0.8 }}
+                    animate={
+                      reactionFeedback?.commentId === comment.id &&
+                      reactionFeedback?.type === "happy"
+                        ? { scale: 1.7, rotate: 15 }
+                        : { scale: 1, rotate: 0 }
+                    }
+                    transition={{
+                      duration: 0.1,
+                      type: "spring",
+                      stiffness: 1200,
+                      damping: 20,
+                    }}
+                  >
+                    <motion.span
+                      className="text-xs"
+                      animate={
+                        reactionFeedback?.commentId === comment.id &&
+                        reactionFeedback?.type === "happy"
+                          ? { scale: 1.5, rotate: -12, y: -8 }
+                          : { scale: 1, rotate: 0, y: 0 }
+                      }
+                      transition={{
+                        duration: 0.1,
+                        type: "spring",
+                        stiffness: 1200,
+                        damping: 20,
+                      }}
+                    >
+                      😄
+                    </motion.span>
+                    {comment.reactions.happy.count > 0 && (
+                      <motion.span
+                        className="text-xs"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 500 }}
+                      >
+                        {comment.reactions.happy.count}
                       </motion.span>
                     )}
                   </motion.button>
