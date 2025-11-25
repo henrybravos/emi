@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { getGuestNameFromURL, getHashFromURL } from "../utils/linkGenerator";
 import { saveRSVP, validateRSVPData, getRSVPByHash } from "../firebase/rsvpService";
-import { markInvitationAsConfirmed, isHashConfirmed } from "../firebase/invitationService";
+import { markInvitationAsConfirmed, isHashConfirmed, getInvitationByHash } from "../firebase/invitationService";
 import { createComment } from "../firebase/commentsService";
 
 export default function RSVP() {
@@ -32,6 +32,16 @@ export default function RSVP() {
           ...prev,
           name: guestName
         }));
+
+        // Primero verificar si la invitación aún existe
+        console.log("🔍 RSVP: Verificando si la invitación existe para hash:", hash);
+        const invitation = await getInvitationByHash(hash);
+
+        if (!invitation) {
+          console.log("❌ RSVP: Invitación no encontrada o eliminada");
+          setHasValidHash(false);
+          return;
+        }
 
         // Verificar si ya se confirmó previamente (tanto en invitations como en RSVPs)
         console.log("🔍 RSVP: Verificando confirmación previa para hash:", hash);

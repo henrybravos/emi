@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import {
   createInvitation,
   getAllInvitations,
+  deleteInvitation,
   type InvitationResponse,
 } from "../firebase/invitationService";
 import MessagesForMama from "./MessagesForMama";
@@ -130,6 +131,25 @@ ${invitation.linkUrl}
     }
   };
 
+  const handleDeleteInvitation = async (invitation: InvitationResponse) => {
+    const confirmDelete = confirm(
+      `¿Estás seguro de que quieres eliminar la invitación de ${invitation.guestName}?\n\nEsta acción no se puede deshacer.`
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      await deleteInvitation(invitation.id);
+      alert(`Invitación de ${invitation.guestName} eliminada exitosamente.`);
+
+      // Recargar lista de invitaciones
+      await loadInvitations();
+    } catch (error) {
+      console.error("Error al eliminar invitación:", error);
+      alert("Error al eliminar la invitación. Inténtalo de nuevo.");
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Formulario para crear invitación */}
@@ -248,14 +268,24 @@ ${invitation.linkUrl}
                       🔗 {invitation.linkUrl}
                     </p>
                   </div>
-                  <motion.button
-                    onClick={() => copyWhatsAppMessage(invitation)}
-                    className="ml-4 px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-sm"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    📱 Copiar WhatsApp
-                  </motion.button>
+                  <div className="flex space-x-2 ml-4">
+                    <motion.button
+                      onClick={() => copyWhatsAppMessage(invitation)}
+                      className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-sm"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      📱 Copiar WhatsApp
+                    </motion.button>
+                    <motion.button
+                      onClick={() => handleDeleteInvitation(invitation)}
+                      className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      🗑️ Eliminar
+                    </motion.button>
+                  </div>
                 </div>
               </motion.div>
             ))}

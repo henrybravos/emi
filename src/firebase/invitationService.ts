@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, query, where, Timestamp, updateDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, Timestamp, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from './config';
 import { encodeGuestName } from '../utils/linkGenerator';
 
@@ -174,5 +174,17 @@ export const isHashConfirmed = async (hash: string): Promise<boolean> => {
   } catch (error) {
     console.error('❌ Error al verificar confirmación:', error);
     return false;
+  }
+};
+
+// Función para eliminar invitación
+export const deleteInvitation = async (invitationId: string): Promise<void> => {
+  try {
+    console.log('🗑️ Eliminando invitación con ID:', invitationId);
+    await deleteDoc(doc(db, INVITATIONS_COLLECTION, invitationId));
+    console.log('✅ Invitación eliminada exitosamente');
+  } catch (error) {
+    console.error('❌ Error al eliminar invitación:', error);
+    throw new Error(`Error al eliminar invitación: ${error}`);
   }
 };

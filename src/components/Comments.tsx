@@ -5,7 +5,8 @@ import {
   getAllComments,
   timestampToDate,
 } from "../firebase/commentsService";
-import { getGuestNameFromURL } from "../utils/linkGenerator";
+import { getGuestNameFromURL, getHashFromURL } from "../utils/linkGenerator";
+import { getInvitationByHash } from "../firebase/invitationService";
 
 interface Comment {
   id: string;
@@ -30,17 +31,31 @@ export default function Comments() {
 
   // Cargar comentarios al iniciar y verificar hash válido
   useEffect(() => {
-    loadComments();
+    const initializeComments = async () => {
+      loadComments();
 
-    // Verificar si el usuario tiene un hash válido
-    const guestName = getGuestNameFromURL();
-    if (guestName) {
-      setHasValidHash(true);
-      setNewComment(prev => ({
-        ...prev,
-        author: guestName
-      }));
-    }
+      // Verificar si el usuario tiene un hash válido y la invitación existe
+      const guestName = getGuestNameFromURL();
+      const hash = getHashFromURL();
+
+      if (guestName && hash) {
+        // Verificar si la invitación aún existe
+        const invitation = await getInvitationByHash(hash);
+
+        if (invitation) {
+          setHasValidHash(true);
+          setNewComment(prev => ({
+            ...prev,
+            author: guestName
+          }));
+        } else {
+          console.log("❌ Comments: Invitación no encontrada o eliminada");
+          setHasValidHash(false);
+        }
+      }
+    };
+
+    initializeComments();
   }, []);
 
   const loadComments = async () => {

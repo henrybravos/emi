@@ -1,28 +1,46 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { getGuestNameFromURL, getPersonalizedMessage } from "../utils/linkGenerator";
+import { getGuestNameFromURL, getPersonalizedMessage, getHashFromURL } from "../utils/linkGenerator";
+import { getInvitationByHash } from "../firebase/invitationService";
 
 export default function Header() {
   const [guestName, setGuestName] = useState<string | null>(null);
   const [personalizedMessage, setPersonalizedMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    // Obtener nombre del invitado desde la URL
-    console.log("🔍 Header: Verificando URL para nombre de invitado");
-    console.log("🔍 Pathname actual:", window.location.pathname);
+    const initializeHeader = async () => {
+      // Obtener nombre del invitado desde la URL
+      console.log("🔍 Header: Verificando URL para nombre de invitado");
+      console.log("🔍 Pathname actual:", window.location.pathname);
 
-    const name = getGuestNameFromURL();
-    console.log("🔍 Nombre decodificado:", name);
+      const name = getGuestNameFromURL();
+      const hash = getHashFromURL();
+      console.log("🔍 Nombre decodificado:", name);
+      console.log("🔍 Hash obtenido:", hash);
 
-    if (name) {
-      console.log("✅ Nombre encontrado, configurando mensaje personalizado");
-      setGuestName(name);
-      const message = getPersonalizedMessage(name);
-      console.log("💌 Mensaje generado:", message);
-      setPersonalizedMessage(message);
-    } else {
-      console.log("❌ No se encontró nombre en la URL");
-    }
+      if (name && hash) {
+        // Verificar si la invitación aún existe
+        const invitation = await getInvitationByHash(hash);
+
+        if (invitation) {
+          console.log("✅ Invitación válida, configurando mensaje personalizado");
+          setGuestName(name);
+          const message = getPersonalizedMessage(name);
+          console.log("💌 Mensaje generado:", message);
+          setPersonalizedMessage(message);
+        } else {
+          console.log("❌ Header: Invitación no encontrada o eliminada");
+          setGuestName(null);
+          setPersonalizedMessage(null);
+        }
+      } else {
+        console.log("❌ No se encontró nombre o hash en la URL");
+        setGuestName(null);
+        setPersonalizedMessage(null);
+      }
+    };
+
+    initializeHeader();
   }, []);
   return (
     <header className="text-center py-2">
