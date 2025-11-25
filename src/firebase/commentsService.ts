@@ -106,10 +106,11 @@ export const toggleReaction = async (
       throw new Error('Comentario no encontrado');
     }
 
-    const reactions = comment.reactions || {
-      likes: { count: 0, users: [] },
-      loves: { count: 0, users: [] },
-      excited: { count: 0, users: [] }
+    const reactions = {
+      likes: comment.reactions?.likes || { count: 0, users: [] },
+      loves: comment.reactions?.loves || { count: 0, users: [] },
+      excited: comment.reactions?.excited || { count: 0, users: [] },
+      happy: comment.reactions?.happy || { count: 0, users: [] }
     };
 
     const currentReaction = reactions[reactionType];
@@ -158,20 +159,22 @@ export const toggleReaction = async (
 
 // Función para verificar si un usuario ya reaccionó con un tipo específico
 export const hasUserReacted = (comment: CommentResponse, userName: string, reactionType: ReactionType): boolean => {
-  const reactions = comment.reactions || {
-    likes: { count: 0, users: [] },
-    loves: { count: 0, users: [] },
-    excited: { count: 0, users: [] }
+  const reactions = {
+    likes: comment.reactions?.likes || { count: 0, users: [] },
+    loves: comment.reactions?.loves || { count: 0, users: [] },
+    excited: comment.reactions?.excited || { count: 0, users: [] },
+    happy: comment.reactions?.happy || { count: 0, users: [] }
   };
   return reactions[reactionType]?.users.includes(userName) || false;
 };
 
 // Función para obtener el tipo de reacción actual del usuario
 export const getUserReactionType = (comment: CommentResponse, userName: string): ReactionType | null => {
-  const reactions = comment.reactions || {
-    likes: { count: 0, users: [] },
-    loves: { count: 0, users: [] },
-    excited: { count: 0, users: [] }
+  const reactions = {
+    likes: comment.reactions?.likes || { count: 0, users: [] },
+    loves: comment.reactions?.loves || { count: 0, users: [] },
+    excited: comment.reactions?.excited || { count: 0, users: [] },
+    happy: comment.reactions?.happy || { count: 0, users: [] }
   };
 
   for (const [type, reaction] of Object.entries(reactions)) {
