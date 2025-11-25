@@ -44,7 +44,8 @@ Estamos muy felices por la llegada de nuestro bebé Emiliano y queremos que acom
 
 📅 Fecha: 29 de Noviembre
 ⏰ Hora: 3:30 PM
-📍 Lugar: Alfonso Ugarte (cerca al puente colgante)
+📍 Lugar: Jr Alfonso Ugarte, San Marcos
+🗺️ Ubicación: https://maps.app.goo.gl/p53dGvGxV5W3PGBm8
 
 🎈 Tu presencia hará este día aún más especial 🎈
 
@@ -105,7 +106,8 @@ Estamos muy felices por la llegada de nuestro bebé Emiliano y queremos que acom
 
 📅 Fecha: 29 de Noviembre
 ⏰ Hora: 3:30 PM
-📍 Lugar: Alfonso Ugarte (cerca al puente colgante)
+📍 Lugar: Jr Alfonso Ugarte, San Marcos
+🗺️ Ubicación: https://maps.app.goo.gl/p53dGvGxV5W3PGBm8
 
 🎈 Tu presencia hará este día aún más especial 🎈
 
