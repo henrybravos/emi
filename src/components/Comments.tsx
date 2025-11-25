@@ -69,11 +69,11 @@ export default function Comments() {
       // Ya son CommentResponse, solo necesitamos asegurar que tengan reacciones
       const commentsWithReactions: Comment[] = firebaseComments.map((comment) => ({
         ...comment,
-        reactions: comment.reactions || {
-          likes: { count: 0, users: [] },
-          loves: { count: 0, users: [] },
-          excited: { count: 0, users: [] },
-          happy: { count: 0, users: [] },
+        reactions: {
+          likes: comment.reactions?.likes || { count: 0, users: [] },
+          loves: comment.reactions?.loves || { count: 0, users: [] },
+          excited: comment.reactions?.excited || { count: 0, users: [] },
+          happy: comment.reactions?.happy || { count: 0, users: [] },
         },
       }));
       setComments(commentsWithReactions);
